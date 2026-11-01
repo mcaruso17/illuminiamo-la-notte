@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vogliono la notte</title>
+  <meta name="description" content="Vogliono la notte, la illumineremo di stelle. Lascia una stella e il tuo pensiero. 20 novembre, sciopero generale.">
+  <meta property="og:title" content="Vogliono la notte, la illumineremo di stelle">
+  <meta property="og:description" content="Lascia una stella nel cielo e il tuo pensiero. 20 novembre, sciopero generale.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="sky" aria-label="Cielo: clicca o tocca un punto vuoto per lasciare una stella"></main>
+
+  <header class="hud">
+    <h1>Vogliono la notte.<br><span>La illumineremo di stelle.</span></h1>
+    <p class="meta">20 novembre · sciopero generale · <span id="count">0</span> stelle</p>
+  </header>
+
+  <p class="hint" id="hint">Tocca il cielo per lasciare la tua stella</p>
+
+  <!-- Lettura di una stella -->
+  <div class="card" id="reader" role="dialog" aria-modal="false" hidden>
+    <p class="card-text" id="reader-text"></p>
+    <p class="card-date" id="reader-date"></p>
+  </div>
+
+  <!-- Scrittura di una stella -->
+  <dialog id="writer">
+    <form method="dialog" id="writer-form">
+      <label for="message">Il tuo pensiero sullo sciopero</label>
+      <textarea id="message" maxlength="280" rows="4" required
+        placeholder="Perché scioperi? Cosa chiedi? Cosa ne pensi?"></textarea>
+      <div class="row">
+        <span id="chars">0/280</span>
+        <div class="actions">
+          <button type="button" id="cancel" class="ghost">Annulla</button>
+          <button type="submit" id="submit">Accendi la stella</button>
+        </div>
+      </div>
+      <p class="error" id="error" hidden></p>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
