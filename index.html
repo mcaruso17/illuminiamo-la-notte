@@ -22,6 +22,7 @@
   <!-- Lettura di una stella -->
   <div class="card" id="reader" role="dialog" aria-modal="false" hidden>
     <p class="card-text" id="reader-text"></p>
+    <p class="card-name" id="reader-name" hidden></p>
     <p class="card-date" id="reader-date"></p>
   </div>
 
@@ -31,6 +32,8 @@
       <label for="message">Il tuo pensiero sullo sciopero</label>
       <textarea id="message" maxlength="280" rows="4" required
         placeholder="Perché scioperi? Cosa chiedi? Cosa ne pensi?"></textarea>
+      <label for="name">Firma <span class="opt">(facoltativa, sarà visibile a tutti)</span></label>
+      <input id="name" type="text" maxlength="40" autocomplete="nickname" placeholder="Nome, soprannome o lascia vuoto">
       <div class="row">
         <span id="chars">0/280</span>
         <div class="actions">

@@ -16,6 +16,8 @@
   const writer = document.getElementById("writer");
   const form = document.getElementById("writer-form");
   const message = document.getElementById("message");
+  const nameInput = document.getElementById("name");
+  const readerName = document.getElementById("reader-name");
   const chars = document.getElementById("chars");
   const submit = document.getElementById("submit");
   const errorBox = document.getElementById("error");
@@ -28,9 +30,17 @@
   const safeGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const safeSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignora */ } };
 
+  // Se la colonna "name" non esiste ancora nel database si ripiega sullo schema vecchio.
+  let COLS = "id,x,y,message,name,created_at";
+  const LEGACY_COLS = "id,x,y,message,created_at";
+
   async function fetchStars() {
     if (!ONLINE) return JSON.parse(safeGet(LOCAL_KEY) || "[]");
-    const res = await fetch(API + "?select=id,x,y,message,created_at&order=id.asc&limit=10000", { headers: HEADERS });
+    let res = await fetch(API + "?select=" + COLS + "&order=id.asc&limit=10000", { headers: HEADERS });
+    if (res.status === 400 && COLS !== LEGACY_COLS) {
+      COLS = LEGACY_COLS;
+      res = await fetch(API + "?select=" + COLS + "&order=id.asc&limit=10000", { headers: HEADERS });
+    }
     if (!res.ok) throw new Error("Lettura fallita: " + res.status);
     return res.json();
   }
@@ -43,7 +53,8 @@
       safeSet(LOCAL_KEY, JSON.stringify(all));
       return saved;
     }
-    const res = await fetch(API + "?select=id,x,y,message,created_at", {
+    if (COLS === LEGACY_COLS) delete star.name;
+    const res = await fetch(API + "?select=" + COLS, {
       method: "POST",
       headers: { ...HEADERS, Prefer: "return=representation" },
       body: JSON.stringify(star)
@@ -70,7 +81,7 @@
     el.style.setProperty("--size", (2 + r * 2.5).toFixed(1) + "px");
     el.style.setProperty("--tw", (3 + r * 4).toFixed(1) + "s");
     el.style.setProperty("--delay", (-r * 7).toFixed(1) + "s");
-    el.setAttribute("aria-label", "Stella: " + s.message);
+    el.setAttribute("aria-label", "Stella: " + s.message + (s.name ? ", firmata " + s.name : ""));
     el.addEventListener("click", (e) => { e.stopPropagation(); showReader(el, s); });
     el.addEventListener("mouseenter", () => showReader(el, s));
     el.addEventListener("mouseleave", hideReader);
@@ -86,6 +97,8 @@
     activeEl = el;
     el.classList.add("active");
     readerText.textContent = s.message;
+    readerName.textContent = s.name || "";
+    readerName.hidden = !s.name;
     readerDate.textContent = s.created_at
       ? new Date(s.created_at).toLocaleString("it-IT", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
       : "";
@@ -123,6 +136,7 @@
     pending = { x: e.clientX / innerWidth, y: e.clientY / innerHeight };
     errorBox.hidden = true;
     message.value = "";
+    nameInput.value = safeGet("stelle-name") || "";
     chars.textContent = "0/280";
     writer.showModal();
     if (wait > 0) showError(`Hai appena acceso una stella. Riprova tra ${Math.ceil(wait / 1000)} secondi.`);
@@ -144,7 +158,11 @@
     if (Date.now() - last < COOLDOWN_MS) return showError("Aspetta un minuto tra una stella e l'altra.");
     submit.disabled = true;
     try {
-      const saved = await saveStar({ x: +pending.x.toFixed(5), y: +pending.y.toFixed(5), message: text });
+      const name = nameInput.value.trim().slice(0, 40);
+      const star = { x: +pending.x.toFixed(5), y: +pending.y.toFixed(5), message: text };
+      if (name) star.name = name;
+      const saved = await saveStar(star);
+      safeSet("stelle-name", name);
       safeSet("stelle-last", String(Date.now()));
       addStar(saved, true);
       writer.close();

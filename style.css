@@ -115,6 +115,7 @@ html, body {
   z-index: 5;
 }
 .card-text { margin: 0; font-size: 15px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.card-name { margin: 8px 0 0; font-size: 13px; font-style: italic; color: #9db8ff; overflow-wrap: anywhere; }
 .card-date { margin: 8px 0 0; font-size: 11px; color: var(--dim); }
 
 /* ---- Dialog di scrittura ---- */
@@ -129,7 +130,8 @@ dialog {
 dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
 form { padding: 18px; display: grid; gap: 10px; }
 label { font-size: 14px; color: var(--dim); }
-textarea {
+.opt { font-size: 12px; opacity: 0.8; }
+textarea, input[type="text"] {
   width: 100%;
   resize: vertical;
   padding: 10px;
@@ -140,7 +142,7 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
 }
-textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+textarea:focus, input[type="text"]:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 #chars { font-size: 12px; color: var(--dim); }
 .actions { display: flex; gap: 8px; }
