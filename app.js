@@ -1,66 +1,38 @@
 (() => {
-  const cfg = window.STELLE_CONFIG || {};
-  const ONLINE = Boolean(cfg.supabaseUrl && cfg.supabaseKey);
-  const API = ONLINE ? cfg.supabaseUrl.replace(/\/$/, "") + "/rest/v1/stars" : null;
-  const HEADERS = ONLINE ? { apikey: cfg.supabaseKey, "Content-Type": "application/json" } : {};
-  const LOCAL_KEY = "stelle-demo";
-  const COOLDOWN_MS = 60 * 1000; // una stella al minuto per browser
+  const API = "api.php";
   const REFRESH_MS = 20 * 1000;
 
-  const sky = document.getElementById("sky");
-  const count = document.getElementById("count");
-  const hint = document.getElementById("hint");
-  const reader = document.getElementById("reader");
-  const readerText = document.getElementById("reader-text");
-  const readerDate = document.getElementById("reader-date");
-  const writer = document.getElementById("writer");
-  const form = document.getElementById("writer-form");
-  const message = document.getElementById("message");
-  const nameInput = document.getElementById("name");
-  const readerName = document.getElementById("reader-name");
-  const chars = document.getElementById("chars");
-  const submit = document.getElementById("submit");
-  const errorBox = document.getElementById("error");
+  const $ = (id) => document.getElementById(id);
+  const sky = $("sky"), count = $("count"), hint = $("hint");
+  const reader = $("reader"), readerText = $("reader-text"), readerName = $("reader-name"), readerDate = $("reader-date");
+  const delBtn = $("delete");
+  const writer = $("writer"), form = $("writer-form"), message = $("message"), nameInput = $("name"), honeypot = $("website");
+  const chars = $("chars"), submit = $("submit"), errorBox = $("error");
+  const adminbar = $("adminbar"), login = $("login"), loginForm = $("login-form"), password = $("password"), loginError = $("login-error");
 
-  const stars = new Map(); // id -> dati
+  const stars = new Map(); // id -> { data, el }
   let pending = null;      // {x, y} della stella in scrittura
-  let activeEl = null;
+  let active = null;       // { el, s } della stella mostrata
+  let pinned = false;      // la card resta aperta finché non si clicca altrove
+  let csrf = null;         // presente solo se admin
 
-  // ---------- storage ----------
   const safeGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const safeSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignora */ } };
 
-  // Se la colonna "name" non esiste ancora nel database si ripiega sullo schema vecchio.
-  let COLS = "id,x,y,message,name,created_at";
-  const LEGACY_COLS = "id,x,y,message,created_at";
-
-  async function fetchStars() {
-    if (!ONLINE) return JSON.parse(safeGet(LOCAL_KEY) || "[]");
-    let res = await fetch(API + "?select=" + COLS + "&order=id.asc&limit=10000", { headers: HEADERS });
-    if (res.status === 400 && COLS !== LEGACY_COLS) {
-      COLS = LEGACY_COLS;
-      res = await fetch(API + "?select=" + COLS + "&order=id.asc&limit=10000", { headers: HEADERS });
-    }
-    if (!res.ok) throw new Error("Lettura fallita: " + res.status);
-    return res.json();
-  }
-
-  async function saveStar(star) {
-    if (!ONLINE) {
-      const all = JSON.parse(safeGet(LOCAL_KEY) || "[]");
-      const saved = { ...star, id: "local-" + Date.now(), created_at: new Date().toISOString() };
-      all.push(saved);
-      safeSet(LOCAL_KEY, JSON.stringify(all));
-      return saved;
-    }
-    if (COLS === LEGACY_COLS) delete star.name;
-    const res = await fetch(API + "?select=" + COLS, {
-      method: "POST",
-      headers: { ...HEADERS, Prefer: "return=representation" },
-      body: JSON.stringify(star)
-    });
-    if (!res.ok) throw new Error("Salvataggio fallito: " + res.status);
-    return (await res.json())[0];
+  async function api(action, body) {
+    const opts = body === undefined
+      ? { credentials: "same-origin" }
+      : {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", ...(csrf ? { "X-CSRF-Token": csrf } : {}) },
+          body: JSON.stringify(body)
+        };
+    const res = await fetch(`${API}?action=${action}`, opts);
+    let data = {};
+    try { data = await res.json(); } catch { /* risposta non JSON */ }
+    if (!res.ok) throw Object.assign(new Error(data.error || "Errore " + res.status), { status: res.status });
+    return data;
   }
 
   // ---------- rendering ----------
@@ -72,7 +44,6 @@
 
   function addStar(s, isNew = false) {
     if (stars.has(s.id)) return;
-    stars.set(s.id, s);
     const r = hash(s.id);
     const el = document.createElement("button");
     el.className = "star" + (isNew ? " new" : "");
@@ -82,19 +53,32 @@
     el.style.setProperty("--tw", (3 + r * 4).toFixed(1) + "s");
     el.style.setProperty("--delay", (-r * 7).toFixed(1) + "s");
     el.setAttribute("aria-label", "Stella: " + s.message + (s.name ? ", firmata " + s.name : ""));
-    el.addEventListener("click", (e) => { e.stopPropagation(); showReader(el, s); });
-    el.addEventListener("mouseenter", () => showReader(el, s));
-    el.addEventListener("mouseleave", hideReader);
+    el.addEventListener("click", (e) => { e.stopPropagation(); showReader(el, s); pinned = true; });
+    el.addEventListener("mouseenter", () => { if (!pinned) showReader(el, s); });
+    el.addEventListener("mouseleave", () => { if (!pinned) hideReader(); });
     el.addEventListener("focus", () => showReader(el, s));
-    el.addEventListener("blur", hideReader);
     sky.appendChild(el);
+    stars.set(s.id, { data: s, el });
+    updateCount();
+  }
+
+  function removeStar(id) {
+    const entry = stars.get(id);
+    if (!entry) return;
+    if (active && active.s.id === id) hideReader();
+    entry.el.remove();
+    stars.delete(id);
+    updateCount();
+  }
+
+  function updateCount() {
     count.textContent = stars.size;
-    if (stars.size > 0) hint.classList.add("gone");
+    hint.classList.toggle("gone", stars.size > 0);
   }
 
   function showReader(el, s) {
-    if (activeEl) activeEl.classList.remove("active");
-    activeEl = el;
+    if (active) active.el.classList.remove("active");
+    active = { el, s };
     el.classList.add("active");
     readerText.textContent = s.message;
     readerName.textContent = s.name || "";
@@ -102,6 +86,7 @@
     readerDate.textContent = s.created_at
       ? new Date(s.created_at).toLocaleString("it-IT", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
       : "";
+    delBtn.hidden = !csrf;
     reader.hidden = false;
     const rect = el.getBoundingClientRect();
     const cw = reader.offsetWidth, ch = reader.offsetHeight;
@@ -116,13 +101,24 @@
 
   function hideReader() {
     reader.hidden = true;
-    if (activeEl) activeEl.classList.remove("active");
-    activeEl = null;
+    pinned = false;
+    if (active) active.el.classList.remove("active");
+    active = null;
+  }
+
+  function setAdmin(token) {
+    csrf = token || null;
+    adminbar.hidden = !csrf;
+    if (active) delBtn.hidden = !csrf;
   }
 
   async function refresh() {
     try {
-      (await fetchStars()).forEach((s) => addStar(s));
+      const data = await api("list");
+      setAdmin(data.csrf);
+      const ids = new Set(data.stars.map((s) => s.id));
+      for (const id of [...stars.keys()]) if (!ids.has(id)) removeStar(id); // eliminate dall'admin
+      data.stars.forEach((s) => addStar(s));
     } catch (e) {
       console.warn(e);
     }
@@ -131,52 +127,88 @@
   // ---------- scrittura ----------
   sky.addEventListener("click", (e) => {
     if (!reader.hidden) { hideReader(); return; }
-    const last = Number(safeGet("stelle-last") || 0);
-    const wait = COOLDOWN_MS - (Date.now() - last);
     pending = { x: e.clientX / innerWidth, y: e.clientY / innerHeight };
     errorBox.hidden = true;
     message.value = "";
     nameInput.value = safeGet("stelle-name") || "";
     chars.textContent = "0/280";
     writer.showModal();
-    if (wait > 0) showError(`Hai appena acceso una stella. Riprova tra ${Math.ceil(wait / 1000)} secondi.`);
   });
 
   message.addEventListener("input", () => { chars.textContent = message.value.length + "/280"; });
-  document.getElementById("cancel").addEventListener("click", () => writer.close());
+  $("cancel").addEventListener("click", () => writer.close());
 
-  function showError(msg) {
-    errorBox.textContent = msg;
-    errorBox.hidden = false;
+  function showError(box, msg) {
+    box.textContent = msg;
+    box.hidden = false;
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const text = message.value.trim();
     if (!text || !pending) return;
-    const last = Number(safeGet("stelle-last") || 0);
-    if (Date.now() - last < COOLDOWN_MS) return showError("Aspetta un minuto tra una stella e l'altra.");
     submit.disabled = true;
+    errorBox.hidden = true;
     try {
       const name = nameInput.value.trim().slice(0, 40);
-      const star = { x: +pending.x.toFixed(5), y: +pending.y.toFixed(5), message: text };
-      if (name) star.name = name;
-      const saved = await saveStar(star);
+      const { star } = await api("add", {
+        x: +pending.x.toFixed(5), y: +pending.y.toFixed(5), message: text, name, website: honeypot.value
+      });
       safeSet("stelle-name", name);
-      safeSet("stelle-last", String(Date.now()));
-      addStar(saved, true);
+      if (star) addStar(star, true);
       writer.close();
     } catch (err) {
-      console.error(err);
-      showError("Non siamo riusciti a salvare la stella. Riprova.");
+      showError(errorBox, err.status === 429 || err.status === 400 ? err.message : "Non siamo riusciti a salvare la stella. Riprova.");
     } finally {
       submit.disabled = false;
     }
   });
 
+  // ---------- admin ----------
+  function openLogin() {
+    loginError.hidden = true;
+    password.value = "";
+    login.showModal();
+  }
+  if (location.hash === "#admin") openLogin();
+  addEventListener("hashchange", () => { if (location.hash === "#admin" && !csrf) openLogin(); });
+  $("login-cancel").addEventListener("click", () => login.close());
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const data = await api("login", { password: password.value });
+      setAdmin(data.csrf);
+      login.close();
+      history.replaceState(null, "", location.pathname);
+    } catch (err) {
+      showError(loginError, err.message);
+    }
+  });
+
+  $("logout").addEventListener("click", async () => {
+    try { await api("logout", {}); } catch { /* ignora */ }
+    setAdmin(null);
+    hideReader();
+  });
+
+  delBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (!active) return;
+    const { s } = active;
+    if (!confirm(`Eliminare questa stella?\n\n"${s.message}"`)) return;
+    try {
+      await api("delete", { id: s.id });
+      removeStar(s.id);
+    } catch (err) {
+      alert(err.status === 403 ? "Sessione scaduta: rientra con #admin." : err.message);
+      if (err.status === 403) setAdmin(null);
+    }
+  });
+
+  reader.addEventListener("click", (e) => e.stopPropagation());
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideReader(); });
 
   refresh();
-  if (ONLINE) setInterval(refresh, REFRESH_MS);
-  else console.info("Stelle: modalità demo (nessun database configurato in config.js).");
+  setInterval(refresh, REFRESH_MS);
 })();

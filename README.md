@@ -3,49 +3,55 @@
 Un cielo nero. Ogni persona accende una stella e ci lascia il proprio pensiero sullo
 sciopero generale del 20 novembre. Alla fine il cielo è stellato.
 
-Sito statico (HTML, CSS, JS senza dipendenze) per GitHub Pages, con un database
-gratuito su [Supabase](https://supabase.com) per condividere le stelle tra tutti.
+Sito per hosting **Plesk con PHP 7.4 o superiore**. Nessun database: le stelle sono
+salvate in un file sul server.
 
 ## File
 
 ```
-.nojekyll      dice a GitHub Pages di servire i file così come sono
-index.html     pagina
-style.css      stile
-app.js         logica: disegno, lettura e scrittura delle stelle
-config.js      URL e chiave di Supabase (vuoti = modalità demo)
-supabase.sql   tabella e permessi da creare su Supabase
+index.html           pagina
+style.css            stile
+app.js               interfaccia: disegno, lettura, scrittura, comandi admin
+api.php              backend: elenco, aggiunta, login admin, eliminazione
+config.example.php   modello della configurazione (password admin)
+data/                stelle e limiti anti-spam (creati dal server, esclusi da Git)
+.htaccess            blocca l'accesso a file interni
 ```
 
-## Messa online
+## Messa online su Plesk
 
-### 1. Database (Supabase, piano gratuito)
-1. Crea un progetto su supabase.com.
-2. *SQL Editor* > *New query*: incolla `supabase.sql` e premi *Run*.
-3. *Project Settings* > *API*: copia **Project URL** e la chiave **publishable** (o `anon`).
-4. Incollali in `config.js`.
+1. **Git**: in Plesk > *Git*, collega questa repository e imposta come cartella di
+   destinazione la document root del dominio (es. `httpdocs`). Modalità di deploy:
+   automatica.
+2. **PHP**: in *Impostazioni PHP* scegli PHP 8.x (7.4 minimo).
+3. **Password admin**: in *File Manager*, nella document root, crea `config.local.php`
+   copiando `config.example.php` e inserisci l'hash della password. L'hash si genera con:
+   `php -r 'echo password_hash("LA-TUA-PASSWORD", PASSWORD_DEFAULT), "\n";'`
+   Il file non è su GitHub e non va messo: la repository è pubblica.
+4. **Permessi**: la cartella `data/` deve essere scrivibile da PHP. Su Plesk di norma lo
+   è già (PHP gira con l'utente dell'abbonamento).
+5. **HTTPS**: attiva il certificato Let's Encrypt (*SSL/TLS*), altrimenti la password
+   admin viaggia in chiaro.
 
-La chiave publishable è pubblica per design: la sicurezza è nei permessi definiti in
-`supabase.sql` (chiunque può leggere e aggiungere stelle, nessuno può modificarle o
-cancellarle tranne te dalla dashboard).
+## Amministrazione
 
-### 2. GitHub Pages
-1. *Settings* > *Pages* > *Deploy from a branch* > `main` / `(root)`.
-2. Il sito sarà su https://mcaruso17.github.io/illuminiamo-la-notte/
+- Apri il sito con `#admin` in fondo all'indirizzo (es. `https://dominio.it/#admin`).
+- Dopo il login compare una barra rossa: clicca una stella e poi *Elimina stella*.
+- L'eliminazione è reversibile: la stella resta in `data/stars.php` con il campo
+  `deleted`. Per ripristinarla, togli quel campo dal file.
+- 5 password sbagliate in 15 minuti bloccano il login da quell'IP.
 
-## Moderazione
+## Anti-spam
 
-Messaggi anonimi su un tema politico attirano spam e insulti. Per nascondere una stella:
-Supabase > *Table Editor* > `stars` > imposta `hidden = true`. Sparisce per tutti al
-prossimo aggiornamento (ogni 20 secondi).
+- Massimo 280 caratteri per pensiero, 40 per la firma.
+- Dallo stesso IP: una stella ogni 30 secondi, al massimo 30 al giorno. Gli IP sono
+  salvati solo come hash.
+- Campo nascosto "trappola" per i bot semplici.
 
-Protezioni presenti: massimo 280 caratteri, una stella al minuto per browser.
-Il limite per browser si aggira facilmente: se il sito diventa virale serve un
-controllo lato server (es. Cloudflare Turnstile o una Edge Function con rate limit).
+Limiti: chi cambia rete (es. dati mobili) aggira il limite per IP, e più persone
+dietro lo stesso Wi-Fi (scuola, ufficio) condividono lo stesso limite.
 
-## Limiti noti
+## Backup
 
-- Le coordinate sono relative allo schermo: su schermi con proporzioni diverse il
-  cielo si "stira", ma le stelle restano nello stesso punto relativo.
-- Sopra qualche migliaio di stelle conviene passare dal DOM a un `<canvas>`.
-- Piano gratuito Supabase: il progetto va in pausa dopo 7 giorni senza traffico.
+Le stelle esistono solo in `data/stars.php` sul server. Scaricalo ogni tanto dal File
+Manager, soprattutto prima e dopo il 20 novembre.

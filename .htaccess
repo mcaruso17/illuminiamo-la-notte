@@ -1,0 +1,5 @@
+# Blocca file che non servono al pubblico.
+<FilesMatch "^(README\.md|config\..*\.php|\.gitignore)$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 /\.git

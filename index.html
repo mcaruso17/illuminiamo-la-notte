@@ -24,7 +24,29 @@
     <p class="card-text" id="reader-text"></p>
     <p class="card-name" id="reader-name" hidden></p>
     <p class="card-date" id="reader-date"></p>
+    <button type="button" class="danger" id="delete" hidden>Elimina stella</button>
   </div>
+
+  <!-- Barra admin (visibile solo dopo il login) -->
+  <div class="adminbar" id="adminbar" hidden>
+    Admin · clicca una stella per eliminarla · <button type="button" class="link" id="logout">Esci</button>
+  </div>
+
+  <!-- Login admin: si apre visitando la pagina con #admin -->
+  <dialog id="login">
+    <form id="login-form">
+      <label for="password">Password amministratore</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div class="row">
+        <span></span>
+        <div class="actions">
+          <button type="button" class="ghost" id="login-cancel">Annulla</button>
+          <button type="submit">Entra</button>
+        </div>
+      </div>
+      <p class="error" id="login-error" hidden></p>
+    </form>
+  </dialog>
 
   <!-- Scrittura di una stella -->
   <dialog id="writer">
@@ -34,6 +56,7 @@
         placeholder="Perché scioperi? Cosa chiedi? Cosa ne pensi?"></textarea>
       <label for="name">Firma <span class="opt">(facoltativa, sarà visibile a tutti)</span></label>
       <input id="name" type="text" maxlength="40" autocomplete="nickname" placeholder="Nome, soprannome o lascia vuoto">
+      <input class="hp" id="website" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="row">
         <span id="chars">0/280</span>
         <div class="actions">
@@ -45,7 +68,6 @@
     </form>
   </dialog>
 
-  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
