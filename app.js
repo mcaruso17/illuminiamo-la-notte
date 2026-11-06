@@ -49,7 +49,10 @@
     el.className = "star" + (isNew ? " new" : "");
     el.style.left = s.x * 100 + "%";
     el.style.top = s.y * 100 + "%";
-    el.style.setProperty("--size", (2 + r * 2.5).toFixed(1) + "px");
+    // Più lungo il pensiero, più grande la stella (da 2px a 8px; radice quadrata così
+    // le stelle brevi restano visibili e le lunghe non diventano enormi).
+    const len = Math.min([...(s.message || "")].length, 280);
+    el.style.setProperty("--size", (2 + 6 * Math.sqrt(len / 280) + r * 0.6).toFixed(1) + "px");
     el.style.setProperty("--tw", (3 + r * 4).toFixed(1) + "s");
     el.style.setProperty("--delay", (-r * 7).toFixed(1) + "s");
     el.setAttribute("aria-label", "Stella: " + s.message + (s.name ? ", firmata " + s.name : ""));
@@ -204,6 +207,16 @@
       alert(err.status === 403 ? "Sessione scaduta: rientra con #admin." : err.message);
       if (err.status === 403) setAdmin(null);
     }
+  });
+
+  // ---------- manifesto ----------
+  const manifesto = $("manifesto");
+  $("open-manifesto").addEventListener("click", () => { hideReader(); manifesto.showModal(); });
+  $("close-manifesto").addEventListener("click", () => manifesto.close());
+  $("manifesto-cta").addEventListener("click", () => manifesto.close());
+  manifesto.addEventListener("click", (e) => { // clic sullo sfondo scuro fuori dal pannello
+    const r = manifesto.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) manifesto.close();
   });
 
   reader.addEventListener("click", (e) => e.stopPropagation());

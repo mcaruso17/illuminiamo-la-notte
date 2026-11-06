@@ -7,6 +7,7 @@
   <meta name="description" content="Vogliono la notte, la illumineremo di stelle. Lascia una stella e il tuo pensiero. 20 novembre, sciopero generale.">
   <meta property="og:title" content="Vogliono la notte, la illumineremo di stelle">
   <meta property="og:description" content="Lascia una stella nel cielo e il tuo pensiero. 20 novembre, sciopero generale.">
+  <link rel="preload" href="fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,7 +16,26 @@
   <header class="hud">
     <h1>Vogliono la notte.<br><span>La illumineremo di stelle.</span></h1>
     <p class="meta">20 novembre · sciopero generale · <span id="count">0</span> stelle</p>
+    <button type="button" class="open-manifesto" id="open-manifesto">Leggi il manifesto</button>
   </header>
+
+  <!-- Manifesto -->
+  <dialog id="manifesto" class="manifesto" aria-labelledby="manifesto-title">
+    <button type="button" class="close" id="close-manifesto" aria-label="Chiudi">×</button>
+    <article>
+      <h2 id="manifesto-title">Vogliono la notte, la illumineremo di stelle</h2>
+      <p>Viviamo in una società dominata dall’ossessione del produrre, consumare e performare che ci costringe sole e in competizione, infelici, accerchiate da conflitti e senza prospettive. Per questo sentiamo il dovere di agire per costruire un futuro migliore, un futuro di pace.</p>
+      <p>Crediamo che per trasformare le condizioni materiali e costruire un’alternativa culturale serva impegnarci collettivamente e animare una nuova passione politica. Il nostro pensiero e la nostra azione partono dall’Università e dal Lavoro.</p>
+      <p class="strong">Nel buio della notte, saremo noi le stelle.</p>
+      <p>L’università pubblica è marginalizzata, definanziata e attaccata da chi vorrebbe la formazione orientata al profitto. Le università telematiche e private aumentano le disuguaglianze tra chi può permettersi di pagare per un titolo e chi non può, degradando la funzione della formazione quale strumento di emancipazione accessibile a tutte.</p>
+      <p>L’Università deve valorizzare la didattica, la sua qualità e il ruolo delle docenti. La ricerca è motore di progresso socio-culturale, scientifico e tecnologico del nostro Paese: deve essere un lavoro retribuito, tutelato, libero da interessi esterni e imperativi quantitativi. Non vogliamo che gli atenei diventino aziende di cui misurare performance e le studenti le loro clienti. Le università devono essere comunità che vivono in relazione con i territori che abitano e contribuire a realizzare un avvenire migliore per tutte.</p>
+      <p class="motto">🌟 L’università sarà avanguardia di ciò che verrà.</p>
+      <p>Il lavoro è sempre più impoverito e disumanizzato secondo una logica che identifica produttività, flessibilità e reperibilità come parole d'ordine di un sistema che schiaccia le più vulnerabili e arricchisce un gruppo ristretto di potenti. La sicurezza non può essere sacrificata sull’altare del profitto, morire lavorando è intollerabile. Il salario non è una concessione: deve garantire una casa, le spese e la possibilità di immaginare con serenità il domani. Il contratto è uno strumento di tutela e deve rispecchiare l’organizzazione delle mansioni, non alimentare incertezza, precarietà e sfruttamento. Non vogliamo un lavoro totalizzante che invada il tempo per la famiglia, per lo svago e per il riposo. Il lavoro deve avere una funzione sociale riconosciuta perché il senso dell’impegno individuale è contribuire al benessere collettivo.</p>
+      <p class="motto">🌟 Il lavoro sarà emancipazione per chi verrà.</p>
+      <p class="strong last">È giunto il tempo di illuminare la notte.</p>
+      <button type="button" class="cta" id="manifesto-cta">Accendi la tua stella</button>
+    </article>
+  </dialog>
 
   <p class="hint" id="hint">Tocca il cielo per lasciare la tua stella</p>
 

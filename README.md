@@ -14,9 +14,16 @@ style.css            stile
 app.js               interfaccia: disegno, lettura, scrittura, comandi admin
 api.php              backend: elenco, aggiunta, login admin, eliminazione
 config.example.php   modello della configurazione (password admin)
+fonts/               Montserrat in locale (licenza OFL), niente Google Fonts
 data/                stelle e limiti anti-spam (creati dal server, esclusi da Git)
 .htaccess            blocca l'accesso a file interni
 ```
+
+## Comportamento
+
+- La dimensione di una stella cresce con la lunghezza del pensiero (da 2 a 8 px).
+- Il pulsante *Leggi il manifesto* apre il testo del manifesto in un pannello laterale.
+  Il testo è in `index.html`.
 
 ## Messa online su Plesk
 
